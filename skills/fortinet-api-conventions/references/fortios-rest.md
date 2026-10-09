@@ -139,6 +139,42 @@ reason the `cmdb` roster is the stable answer to "which devices does this contro
 while the `monitor` status table is only the answer to "what is their state right now" — a
 switch can be missing from the second while present in the first.
 
+## IPsec monitor: tunnels and the peers hanging off them
+
+`GET /api/v2/monitor/vpn/ipsec` returns one entry per phase-1 the IKE daemon is servicing
+**and one per dynamic child** of a phase-1. A child carries `parent: "<phase-1 name>"` and is
+named `<phase-1>_<n>`. Confirmed on FortiOS 7.6.7 (ADVPN hub) and 8.0.1 (ADVPN spoke).
+
+- On a **hub**, a dial-up template (`vpn.ipsec/phase1-interface` `type: "dynamic"`) gets a
+  child per connected peer — each ADVPN spoke, dial-up site or remote-access client. The
+  template entry itself has an empty `proxyid` and `rgwy: "0.0.0.0"`; its byte counters are
+  the aggregate. Children report `type: "dialup"`.
+- On a **spoke**, a static tunnel with `auto-discovery-receiver` + `net-device` enabled gets a
+  child per on-demand ADVPN shortcut. A quiet spoke has none — absence is normal.
+- **The `n` in `<phase-1>_<n>` is a reusable slot** (`dialup_index`), not an identity: the
+  same name can be a different peer after a reconnect. Key a peer on its address / identity.
+
+Child fields worth knowing:
+
+| field | meaning |
+|---|---|
+| `username` | the peer's IKE identity (its `localid`). When the peer sends none, FortiOS echoes its address here — the same value as `rgwy`. |
+| `rgwy` | the peer's underlay / public address |
+| `tun_id` | the peer's overlay (or mode-cfg-assigned) address inside the tunnel |
+| `creation_time` | **seconds since the SA came up** (an uptime), not an epoch |
+| `incoming_bytes` / `outgoing_bytes` | phase-1 totals; the per-selector counters are under `proxyid[]` |
+
+Classify a child from its PARENT's cmdb entry, not from the child: `auto-discovery-sender:
+enable` on a dynamic template → ADVPN spoke; `xauthtype` ≠ disable, `eap: enable`, or
+`wizard-type: dialup-forticlient*` → remote-access user; a child of a `static` tunnel only
+exists as an ADVPN shortcut. Remote-access children are expected to carry the authenticated
+user in an `xauth_user`-style field — not yet confirmed on hardware, so read it defensively.
+
+`GET /api/v2/monitor/vpn/ssl` lists SSL-VPN sessions (`user_name`, `remote_host`,
+`subsessions[]` with the assigned `aip` and byte counts). It still answers on 7.6.7 with an
+empty list after SSL-VPN tunnel mode was removed (7.6.3+), so an empty answer there is not a
+read failure.
+
 ## Management access
 
 `allowaccess` on a `system/interface` object lists the protocols that interface accepts

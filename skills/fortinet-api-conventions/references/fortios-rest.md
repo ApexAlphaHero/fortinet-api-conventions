@@ -113,6 +113,32 @@ reservation is cmdb; a lease is monitor. A managed switch's port descriptions ar
 port link state is monitor. Keep the two apart in your model — a "who owns this address"
 question is answered by cmdb, a "who is on this address right now" question by monitor.
 
+## Detected devices: the field names moved, and a missing field is silent
+
+`GET /api/v2/monitor/user/device/query` (the device inventory / detected devices) renamed
+several fields across releases. On 7.x the row carries:
+
+| meaning | 7.x field | older field |
+|---|---|---|
+| IPv4 address | `ipv4_address` | `ip` |
+| OS family | `os_name` | `os` (or `type`) |
+| interface the client was seen on | `detected_interface` | `interface` |
+| user | `unauth_user` (or `user` when authenticated) | `user` / `detected_user` |
+| FortiSwitch | `fortiswitch_id`, `fortiswitch_port_id` (number), `fortiswitch_port_name` (`"port3"`) | `switch_fortilink` / `fortiswitch`, `switch_port` |
+
+Two traps compound here. Asking for a field the build doesn't have in `format=` is not an
+error: the key is simply absent from every row. And a parser that reads the old name gets an
+empty string, which looks like a legitimate "no address" rather than a bug. So request BOTH
+spellings in `format=` (`ipv4_address|ip|…`) and read the new name first, falling back to the
+old. The row is also the gate's *current* view of the client — built from traffic it sees,
+with `is_online` and `last_seen` — which makes its address a stronger "where is this device
+right now" answer than a DHCP lease, which only says what was handed out.
+
+`last_seen` and `active_start_time` are Unix seconds. `is_online` is the gate's cached view and
+can lag a client that just left. A client reached through a ZTNA access proxy gets a row on the
+gate it connects *through*, with no switch / AP attribution: treat a row as local only when it
+carries a FortiSwitch or FortiAP name, or the same MAC is in that gate's ARP table.
+
 ## Admission and connectivity are two different fields
 
 On both managed-device tables the controller reports **two independent axes**, and reading

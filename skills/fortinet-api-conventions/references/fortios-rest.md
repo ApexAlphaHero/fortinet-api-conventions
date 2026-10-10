@@ -167,8 +167,15 @@ Child fields worth knowing:
 Classify a child from its PARENT's cmdb entry, not from the child: `auto-discovery-sender:
 enable` on a dynamic template → ADVPN spoke; `xauthtype` ≠ disable, `eap: enable`, or
 `wizard-type: dialup-forticlient*` → remote-access user; a child of a `static` tunnel only
-exists as an ADVPN shortcut. Remote-access children are expected to carry the authenticated
-user in an `xauth_user`-style field — not yet confirmed on hardware, so read it defensively.
+exists as an ADVPN shortcut.
+
+**A remote-access child carries the user in `user`, not `username`** (confirmed on 7.6 with an
+IKEv2 EAP dial-up template): `user` is the authenticated identity, beside `auth_type: "eap"`,
+`user_two_factor_auth`, `fct_uid` (the FortiClient UID) and `rport`. `username` there holds the
+client's own LAN address (behind NAT) — an address in `username` is never an identity, whether
+it is that or a spoke's echoed `rgwy`. `auth_type` alone is enough to classify the child as
+remote access, even when the template's cmdb flags were not readable. IKEv1 XAuth field names
+remain unconfirmed.
 
 `GET /api/v2/monitor/vpn/ssl` lists SSL-VPN sessions (`user_name`, `remote_host`,
 `subsessions[]` with the assigned `aip` and byte counts). It still answers on 7.6.7 with an

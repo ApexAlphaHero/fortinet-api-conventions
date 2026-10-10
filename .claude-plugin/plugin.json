@@ -1,7 +1,7 @@
 {
   "name": "fortinet-api-conventions",
   "displayName": "Fortinet API conventions",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "FortiManager JSON-RPC and FortiOS REST conventions and traps: api-key Bearer auth and why /sys/logout must never be called, RPC fault classes and retry policy, proxy vs direct device transport, /dvmdb rosters and HA serial flips, CMDB vs monitor reads, access-profile groups (system/global needs System, not Network), the admission-vs-connectivity split on the managed-switch and managed-AP tables (and the firmware variance in the AP's status vocabulary), DHCP reservation/lease/VIP shapes, quarantine address groups, FortiSwitch and FortiAP SNMP quirks, the FortiSwitch / FortiAP local web-UI firmware-upgrade protocol (login forms, image header token = serial prefix, upload field order, compat check, deploy, reboot wait), and the FortiGate admin session login (/api/v2/authentication, body verdict, ccsrf_token cookie) and REST firmware upgrade (multipart upload, gzip .out header token, reboot timing), and the IPsec monitor's dynamic children (ADVPN spokes and shortcuts, dial-up peers: parent, reusable slot names, username = IKE id, creation_time = uptime).",
   "author": { "name": "Rogers Group — David Moore" }
 }

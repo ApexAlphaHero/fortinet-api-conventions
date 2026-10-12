@@ -139,6 +139,14 @@ can lag a client that just left. A client reached through a ZTNA access proxy ge
 gate it connects *through*, with no switch / AP attribution: treat a row as local only when it
 carries a FortiSwitch or FortiAP name, or the same MAC is in that gate's ARP table.
 
+The row holds ONE address per MAC: a source address the gate saw traffic from. For a network
+card with secondary addresses that is whichever one last talked, which proves the card has that
+address and nothing about which is its primary — and FortiManager, proxying the same call,
+repeats it unchanged. Cross-check against the gate's ARP table before trusting it: when ARP
+has the MAC bound to a different address, or to several, treat the detected address as a hint
+only. A detected address merely absent from ARP is not a contradiction — an idle neighbour
+entry ages out within minutes.
+
 ## Admission and connectivity are two different fields
 
 On both managed-device tables the controller reports **two independent axes**, and reading

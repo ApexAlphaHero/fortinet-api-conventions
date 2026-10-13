@@ -67,6 +67,35 @@ session above (with `X-CSRFTOKEN`):
 - The REST upload does **not** enforce Fortinet's supported upgrade path; a 7.6 → 8.0 jump was
   accepted. Choosing a supported step is the caller's job.
 
+## Reboot and restart (FortiGate, managed FortiSwitch, managed FortiAP)
+
+Read off the gate's own schema (`GET /api/v2/monitor/?action=schema` → `directory[]`, one entry
+per `path`/`name`/`action` with its `request.parameters` and `access_group`) on 7.6.7 build3704
+and 8.0.1 build245, then exercised on a 61F, 2026-10:
+
+| Action | Request | Access group |
+|---|---|---|
+| reboot the gate | `POST /api/v2/monitor/system/os/reboot` `{ "event_log_message": "…" }` (optional) | `sysgrp.cfg` |
+| restart a FortiLink switch | `POST /api/v2/monitor/switch-controller/managed-switch/restart` `{ "mkey": "<switch-id>" }` | `wifi` |
+| restart a managed AP | `POST /api/v2/monitor/wifi/managed_ap/restart` `{ "wtpname": "<wtp-id>" }` | `wifi` |
+
+- A `GET` on an action path answers **405** (it exists) where an unknown path answers 404 — a
+  side-effect-free way to probe that a build has the action.
+- `mkey` is the switch's **name** (`switch-id`), which a FortiLink fleet may rename away from the
+  serial. Look it up by serial in `GET …/managed-switch/status` (`serial`, `switch-id`, `status`
+  `Connected`/`Idle`, `join_time`) first; `wtpname` is `wtp_id` in `GET …/wifi/managed_ap`.
+- The gate reboot answers before it goes down (~16 s on a 61F, back ~2.5 min later); a dropped
+  socket on the POST itself means "maybe taken", not "refused".
+- **Proof it rebooted:** `GET /api/v2/monitor/web-ui/state` → `results.utc_last_reboot` (epoch
+  ms). Compare it with the value read *before* the reboot, never with your own clock — a lab gate's
+  clock ran ~7 min behind. A managed switch shows `Idle` on its gate while it restarts, then
+  `Connected` with a new `join_time`.
+- An HA cluster member reboots alone and fails the cluster over; check `cmdb/system/ha` → `mode`.
+- CLI equivalents (SSH): `execute reboot` (answers a `(y/n)` prompt),
+  `execute switch-controller switch-action restart swtp <switch-id>`,
+  `execute wireless-controller reset-wtp <serial|all|wtp-group>`. Over the CLI, `get system ha` →
+  `mode : standalone` and `get system status` → `Serial-Number:` read the same facts.
+
 ## Paths
 
 | Need | Path | Notes |

@@ -113,6 +113,19 @@ reservation is cmdb; a lease is monitor. A managed switch's port descriptions ar
 port link state is monitor. Keep the two apart in your model — a "who owns this address"
 question is answered by cmdb, a "who is on this address right now" question by monitor.
 
+### Interface state: `link`, `speed` and `duplex` are numbers and booleans, not words
+
+`GET /api/v2/monitor/system/interface` reports each interface's runtime state as `link`
+(boolean — the oper status), `speed` (number, Mb/s; `0` when the link is down) and `duplex`
+(number: `1` on a full-duplex link that is up, `0` on every link that is down). Confirmed on
+FortiOS 7.6.7 and 8.0.1. It carries no `status` at all, so the admin up/down comes from the
+CMDB `system/interface` `status` ("up" / "down").
+
+- Read `duplex` only while `link` is `true`. `0` is what a down link reports, so a reader that
+  maps `0` to "half" without that gate reports every unplugged port as half duplex.
+- On an up link, `0` can only mean half duplex. That reading follows from the encoding and
+  has not been seen on a real half-duplex port.
+
 ## Detected devices: the field names moved, and a missing field is silent
 
 `GET /api/v2/monitor/user/device/query` (the device inventory / detected devices) renamed

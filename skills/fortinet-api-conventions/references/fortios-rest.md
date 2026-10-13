@@ -90,6 +90,9 @@ and 8.0.1 build245, then exercised on a 61F, 2026-10:
   ms). Compare it with the value read *before* the reboot, never with your own clock — a lab gate's
   clock ran ~7 min behind. A managed switch shows `Idle` on its gate while it restarts, then
   `Connected` with a new `join_time`.
+- A reboot ends every admin session. A client signed in with username + password must sign in
+  again afterwards — the old cookie is refused (401) on a gate that is fully back, which reads
+  exactly like "still down" if refusals are treated as unreachability.
 - An HA cluster member reboots alone and fails the cluster over; check `cmdb/system/ha` → `mode`.
 - CLI equivalents (SSH): `execute reboot` (answers a `(y/n)` prompt),
   `execute switch-controller switch-action restart swtp <switch-id>`,

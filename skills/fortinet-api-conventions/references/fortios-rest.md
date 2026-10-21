@@ -192,6 +192,33 @@ has the MAC bound to a different address, or to several, treat the detected addr
 only. A detected address merely absent from ARP is not a contradiction — an idle neighbour
 entry ages out within minutes.
 
+## IPv6: where FortiOS keeps it, and where it does not
+
+Read off FortiOS 7.6.7 and 8.0.1; FortiManager's device-DB copy of the same CMDB answers the
+same fields with option values as integers (`0` / `1`) rather than `"disable"` / `"enable"`.
+
+- **Interface addresses live in the CMDB, under a sub-object.** `cmdb/system/interface` rows
+  carry `ipv6: { "ip6-mode", "ip6-address": "2001:db8::1/64", "ip6-extra-addr": [{ prefix }],
+  "ip6-send-adv", "ip6-prefix-list": [{ prefix, … }], … }`. `ip6-address` is `"::/0"` when
+  unset. An interface in `ip6-mode` dhcp / pppoe / delegated holds its address only at runtime,
+  and it is not in this object. A projected FortiManager read must name `ipv6` in `fields` to
+  get the block at all.
+- **`monitor/system/interface` carries no IPv6 field.** Its keys stop at `ip` / `mask`; the
+  CMDB block above is the only interface-IPv6 source over REST.
+- **DHCPv6 has no reservations.** `cmdb/system.dhcp6/server` has `subnet` (the prefix,
+  `"::/0"` until configured or when delegated), `ip-mode`, `ip-range`, `prefix-range`, and no
+  `reserved-address` table. Every DHCPv6 binding is a lease, and there is nothing to push.
+- **`monitor/system/dhcp?ipv6=true` returns the COMBINED table.** The IPv4 rows are unchanged
+  and every row gains `type: "ipv4" | "ipv6"`, so adding the flag only adds rows. Ask for
+  `type` in `format=` to tell the families apart.
+- **The device inventory reports one `ipv6_address` per client** (`user/device/query`), and it
+  is the only place a SLAAC or privacy address shows up — no DHCP table lists one. The
+  FortiSwitch `detected-device` table has the same field, and its `last_seen` is an AGE in
+  seconds (a live row read 7), unlike the inventory's Unix-seconds `last_seen`.
+- **There is no IPv6 neighbour-cache endpoint** at `network/ipv6-neighbor`, `network/ndp`,
+  `network/ipv6/neighbor`, `router/ipv6-neighbor` or `system/ipv6-neighbor-cache` (all 404);
+  `network/arp?ipv6=true` still returns IPv4 rows only.
+
 ## Admission and connectivity are two different fields
 
 On both managed-device tables the controller reports **two independent axes**, and reading

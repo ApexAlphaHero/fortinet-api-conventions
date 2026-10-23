@@ -75,6 +75,37 @@ session above (with `X-CSRFTOKEN`):
   you pin the leaf, accept every change for a while after an upgrade you ran, not only the first.
   Same address, same serial; nothing in the cert says which one is "final".
 
+### Upgrading an HA cluster (a-p, FGCP)
+
+Seen on a 61F pair, 7.6.7 build3704 → 7.6.8 build3744, `upgrade-mode uninterruptible`,
+`override disable`, `session-pickup enable`, a reserved HA management interface on each member:
+
+- **Upload once, to the primary**, with the same `firmware/upgrade` multipart call as a
+  standalone gate. FortiOS pushes the image to the secondary and runs the order itself:
+  secondary reboots onto it, failover, then the old primary reboots.
+- **The upload request does not answer until the secondary is done and the cluster has failed
+  over**: 242 s here, against ~8 s on a standalone gate. A short response timeout reports a
+  failure for an upgrade that is working. The old primary reboots ~15 s after it answers.
+- ~8 min end to end; each member was unreachable ~3 min on its own address.
+- **The primary role returned to the original primary on its own**, ~3 min after it went down
+  (override off, it had the higher priority). Don't assume which member ends up primary.
+- `GET /api/v2/monitor/system/ha-peer` (from either member) lists every member's `serial_no`,
+  `hostname`, `priority` and `primary` flag, but **no addresses and no versions**. Read each
+  member's version from its own `monitor/system/status`, through its own address.
+- **Reserved HA management (`ha-mgmt-status enable`, `ha-mgmt-interfaces`)** gives each member
+  its own address that does not move at failover. The primary's API does not report the
+  secondary's reserved address. The API admin, its token and its trusthost are synced, so one
+  token reaches both members.
+- **Certificates are partly per member.** `admin-server-cert` and imported local certs are
+  synced, so a cluster serving an imported cert presents the same leaf from every member.
+  The built-ins are not: `Fortinet_GUI_Server` (the 7.x default HTTPS cert, CN "FortiGate")
+  differs per member, and `Fortinet_Factory` names each member's own serial. `Fortinet_SSL` was
+  identical (synced). So on a SHARED address with the default cert, a failover changes the leaf
+  that address presents. This upgrade regenerated none of the built-ins.
+- A `monitor/system/certificate/download?mkey=Fortinet_Factory&type=local` made through the
+  secondary's own address once returned the PRIMARY's factory cert (its serial), and the same
+  read later returned the secondary's own. Don't identify a member by one such download.
+
 ## Reboot and restart (FortiGate, managed FortiSwitch, managed FortiAP)
 
 Read off the gate's own schema (`GET /api/v2/monitor/?action=schema` → `directory[]`, one entry

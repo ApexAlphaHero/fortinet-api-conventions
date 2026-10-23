@@ -66,6 +66,14 @@ session above (with `X-CSRFTOKEN`):
   the upgrade reboots every cluster member.
 - The REST upload does **not** enforce Fortinet's supported upgrade path; a 7.6 → 8.0 jump was
   accepted. Choosing a supported step is the caller's job.
+- **The HTTPS certificate can change more than once after the upgrade reboot.** Seen on a 601E
+  (FG6H1E, 7.6.7 build3704 → 7.6.8 build3744) running the default self-signed `FortiGate`
+  certificate. The pre-upgrade cert was served until the reboot. A second cert answered when it
+  came back. ~14 min later a THIRD one answered, and stayed: its NotBefore fell inside the boot,
+  before the second was first seen, so it was minted then but not served first. A 61F upgraded the same hour on the same
+  build changed once. A gate presenting a CA-issued cert it was given does not regenerate it. If
+  you pin the leaf, accept every change for a while after an upgrade you ran, not only the first.
+  Same address, same serial; nothing in the cert says which one is "final".
 
 ## Reboot and restart (FortiGate, managed FortiSwitch, managed FortiAP)
 

@@ -143,7 +143,7 @@ and 8.0.1 build245, then exercised on a 61F, 2026-10:
 | Need | Path | Notes |
 |---|---|---|
 | system status, hostname, serial, version | `/api/v2/monitor/system/status` | serial here is the chassis; HA cluster members differ |
-| interfaces + addresses | `/api/v2/cmdb/system/interface`, `/api/v2/monitor/system/interface` | cmdb = configured, monitor = live counters. **monitor omits every `type tunnel` interface** (IPsec phase1-interfaces incl. ADVPN overlays, GRE, VXLAN) — read their name and `ip` from cmdb or they vanish from an inventory built on monitor |
+| interfaces + addresses | `/api/v2/cmdb/system/interface`, `/api/v2/monitor/system/interface` | cmdb = configured, monitor = live counters. **monitor omits every `type tunnel` interface** (IPsec phase1-interfaces incl. ADVPN overlays, GRE, VXLAN) — read their name and `ip` from cmdb or they vanish from an inventory built on monitor. **It omits a SOFTWARE switch too** (cmdb `type: "switch"`) while still listing its member ports and the VLAN interfaces on it (7.6.8). A software switch's members are NOT on its `system/interface` row (`member` absent, unlike a `hard-switch` or `aggregate`): read them from `/api/v2/cmdb/system/switch-interface` (`member[]` of `{ "interface-name", q_origin_key }`). A VLAN interface's parent is its cmdb `interface` field (a FortiLink aggregate, a hardware or software switch, a port); one gate can carry the same `vlanid` on two parents |
 | DHCP servers / scopes | `/api/v2/cmdb/system/dhcp/server` | `reserved-address[]` lives INSIDE each server object |
 | DHCP leases | `/api/v2/monitor/system/dhcp` | per-scope lease table; supports `?scope=` |
 | ARP table | `/api/v2/monitor/network/arp` | L3 neighbor cache (IP, MAC, interface) |

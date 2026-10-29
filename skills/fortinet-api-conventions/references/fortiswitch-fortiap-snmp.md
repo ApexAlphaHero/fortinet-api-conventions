@@ -52,6 +52,11 @@ facts the controller does not republish. It also has vendor-specific traps.
   not erase the other's value); radio identity is not merged — a radio index absent from a
   scrape is gone along with its VAPs.
 - Station tables (`AssetWirelessStation`-style) join to VAPs on BSSID.
+- IF-MIB has no parent column, and FortiAP sub-interface names do not always repeat the
+  parent's name: the sub-interfaces of `wlan01` / `wlan10` are `w01.N` / `w10.N`, and those of
+  `br0` are `br.N`, beside `br0` itself. Matching the dotted base literally leaves them
+  parentless. Map the abbreviated base back (`wNN` → `wlanNN`, `br` → `br0`) only when that
+  parent is in the same scrape, and do not read the suffix as a VLAN id: that is not documented.
 
 ## General SNMP discipline (applies to both)
 

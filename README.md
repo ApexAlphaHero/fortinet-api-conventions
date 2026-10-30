@@ -1,8 +1,7 @@
 # fortinet-api-conventions
 
 A Claude Code plugin carrying the FortiManager / FortiOS / FortiSwitch / FortiAP API and MIB
-knowledge learned operating a ~190-gate, ~780-AP fleet from a Node.js management app. Vendor
-behavior only — no application-specific paths.
+knowledge. Vendor behavior only — no application-specific paths.
 
 ## Use it in another project
 

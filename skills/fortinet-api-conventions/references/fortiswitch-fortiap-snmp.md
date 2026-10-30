@@ -22,6 +22,11 @@ facts the controller does not republish. It also has vendor-specific traps.
   Hand-configured LAGs carry operator names (`Storage Node 2`) — only a serial-shaped tail
   (alphanumeric, ≥10 chars) goes to the peer lookup. The ifTable publishes no aggregation, so
   this scalar is the only source of trunk → member edges on a directly polled switch.
+- **The ifTable can name a trunk with a role suffix the scalar does not carry.** Observed on an
+  FS-248E: `ifDescr` `1CD11A4549B7-0(primary)` and `_FlInK1_ICL0_(primary)` while
+  `fsTrunkMember` says `1CD11A4549B7-0` / `_FlInK1_ICL0_`; `ifType` is `54` (propMultiplexor),
+  not `161` (ieee8023adLag). Join trunk names with a trailing `(<word>)` stripped, and do not
+  rely on `ifType` to recognize a trunk.
 - A **FortiLink trunk interface leaves the ifTable while the link is down**. Preserve the row
   as "down" when the peer is still active and reciprocates; deleting it makes a downed uplink
   vanish at exactly the moment its down alert fires.

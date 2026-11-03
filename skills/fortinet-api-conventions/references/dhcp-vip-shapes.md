@@ -38,7 +38,10 @@ any placeholder prefix that is not locally-administered so no factory MAC can fa
 ## Releasing
 
 - A lease: `POST monitor/system/dhcp/revoke` `{ ip: [...] }` — expires it; the client may
-  re-lease.
+  re-lease. There is NO `release-lease` (or similar) path — a guessed monitor path answers 404
+  "Endpoint not found" — and `ip` is an ARRAY even for one address; the reference describes a
+  `revoke` with no `ip` as revoking every lease on the server, so never send it without one
+  (confirmed on 7.6.8, 2026-11-03).
 - A reservation: remove the `reserved-address` entry (device first, then FMG mirror).
 - A VIP or interface IP: **refuse**. It is configured on the device; the registry only reports it.
 

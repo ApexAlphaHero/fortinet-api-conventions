@@ -153,7 +153,7 @@ and 8.0.1 build245, then exercised on a 61F, 2026-10:
 | wireless clients | `/api/v2/monitor/wifi/client` | |
 | address groups (quarantine) | `/api/v2/cmdb/firewall/addrgrp`, `/api/v2/cmdb/firewall/address` | MAC-typed addresses |
 | SD-WAN health | `/api/v2/monitor/virtual-wan/health-check`, `/api/v2/monitor/virtual-wan/members`, `/api/v2/cmdb/system/sdwan` | the selected route is not always exposed; label inferred values as inferred |
-| DHCP lease release | `/api/v2/monitor/system/dhcp/revoke` | body `{ "ip": [...] }` |
+| DHCP lease release | `/api/v2/monitor/system/dhcp/revoke` | body `{ "ip": [...] }` — an array even for one IP; no `release-lease` path exists (404); omitting `ip` revokes every lease |
 
 Always pass `vdom=` where the gate has VDOMs; many monitor endpoints default to the
 management VDOM only.

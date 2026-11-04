@@ -197,20 +197,66 @@ CMDB `system/interface` `status` ("up" / "down").
 - On an up link, `0` can only mean half duplex. That reading follows from the encoding and
   has not been seen on a real half-duplex port.
 
-### Secondary interface addresses: the table is `secondary-IP`, the flag is `secondaryip`
+### Secondary interface addresses: the table is `secondaryip`, the flag is `secondary-IP`
 
-`GET /api/v2/cmdb/system/interface` returns an interface's secondary addresses as the child
-table **`secondary-IP`** (capital `IP`): `[{ id, ip: "x.x.x.x y.y.y.y", allowaccess, ... }]`,
-`[]` when there are none. **`secondaryip`** on the same row is the enable FLAG
-(`"enable"` / `"disable"`), not the table. There is no `secondary-ip` key at all. Confirmed on
-FortiOS 7.6.7, 7.6.8 and 8.0.1.
+`GET /api/v2/cmdb/system/interface` follows the CLI (`set secondary-IP enable` +
+`config secondaryip`): the child table is **`secondaryip`**,
+`[{ id, q_origin_key, ip: "x.x.x.x y.y.y.y", allowaccess, gwdetect, ... }]`, `[]` when there
+are none, and **`secondary-IP`** (capital `IP`) on the same row is the enable FLAG
+(`"enable"` / `"disable"`). There is no `secondary-ip` key at all. Read off a 7.6.8 gate with
+two real secondaries; 8.0.1 sends the same keys.
 
-- A reader keyed on `secondary-ip` (the spelling the CLI's `config secondaryip` and most
-  examples suggest) gets `undefined` on every interface and silently reports "no secondaries".
-- FortiManager's device DB follows the CLI instead: the table is `secondaryip`, the flag
-  `secondary-IP` as an integer. Not verified against a live FMG. A reader serving both
-  transports should take whichever of the spellings holds an array, so the flag can never be
-  mistaken for the table.
+- **An earlier version of this entry had the two reversed.** It was written from gates with no
+  secondaries, where the flag reads `"disable"` and the table `[]` — so the shapes could not
+  tell the roles apart. A sample with a real secondary is the only way to settle a key like this.
+- A reader keyed on `secondary-ip` (the spelling most examples suggest) gets `undefined` on
+  every interface and silently reports "no secondaries".
+- A `format=` read must name **`secondaryip`**. Naming only `secondary-IP` returns the flag,
+  drops the table, and is not an error.
+- FortiManager's device DB (`/pm/config/device/<d>/vdom/root/system/interface`) uses the same
+  keys: the table `secondaryip` as `[{ id, oid, ip: ["x.x.x.x", "m.m.m.m"], allowaccess: <int>, ... }]`
+  — `ip` an `[address, mask]` array, not a string — and `secondary-IP` an integer flag (`1` / `0`).
+  Confirmed on a production FortiManager. A JSON-RPC `get` whose `fields` names `secondary-ip`
+  (no such key) returns no secondary table at all, silently. Unset child tables in that DB
+  come back `null` rather than `[]` (the `ipv6` block's `ip6-extra-addr`, `ip6-prefix-list`),
+  and its option flags are integers where REST sends `"enable"` / `"disable"`.
+- A reader serving both transports should take whichever spelling holds an array, so the flag
+  can never be mistaken for the table, and accept both `ip` forms.
+
+### `format=` on a CMDB table keeps nested tables whole
+
+`GET /api/v2/cmdb/<path>?format=a|b|c` returns only the listed top-level attributes on each row
+(plus `q_origin_key`), and a listed attribute that is a child table or an object comes back
+complete. `system/interface` was compared field for field, full read against `format=` read, on
+7.6.8 and 8.0.1: `secondaryip[]`, `member[]` and the `ipv6` object with its `ip6-extra-addr[]`
+and `ip6-prefix-list[]` were identical. One interface row carries ~228 attributes, so a
+16-attribute `format=` cut a 34-interface response from 254 KB to 57 KB (about 78 % smaller). The
+same caveat as everywhere else applies: an unlisted attribute is absent, not an error.
+
+`format=` filters top-level attributes only; it cannot trim INSIDE a child table. On
+`switch-controller/managed-switch` the `ports` table is nearly the whole response (54 ports ×
+~106 attributes per switch), so `format=` alone saved ~2 %. Two things do more:
+
+- **Drop `datasource=1`** unless you read its per-reference annotations: it adds ~18 % to that
+  response, and the listed values are identical without it (also true of `wireless-controller/wtp`).
+- **Address the child table directly**: `GET /api/v2/cmdb/switch-controller/managed-switch/<switch-id>/ports?format=port-name|fortilink-port|…`
+  applies `format=` to each port row. It returns the same ports with the same values, but sorted
+  by `port-name` (trunks before `port1…`), not in the parent's order. Two 54-port switches: 11 KB
+  (parent without `ports` + one child read each) against 342 KB. The cost is one request per
+  switch instead of one per gate.
+
+### FortiLink switch-port VLANs are interface names, not numbers
+
+On a FortiLink-managed switch, a port's `vlan`, `allowed-vlans[]` and `untagged-vlans[]` in
+`switch-controller/managed-switch` name FortiGate VLAN **interfaces**: `vlan: "_default"`,
+`allowed-vlans: [{ "vlan-name": "quarantine", q_origin_key: "quarantine" }]`. No VLAN number
+appears anywhere on the port (7.6.8). The number is that interface's `vlanid` in
+`cmdb/system/interface` (`_default` → 1, `quarantine` → 4093 on a default FortiLink setup), so
+resolve names through a `format=name|vlanid` read of the gate's interfaces. A parser that
+expects numbers, or `{ vlan-id }` objects, silently finds no VLANs on any port.
+`datasource=1` does not turn the names into numbers: it only adds
+`"datasource": "system.interface"` to each reference, and turns `vlan` into
+`{ name, q_origin_key, datasource }`.
 
 ## Detected devices: the field names moved, and a missing field is silent
 

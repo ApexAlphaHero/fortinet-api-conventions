@@ -10,7 +10,7 @@ them back.
 | DHCP server scope | `cmdb/system/dhcp/server` (`ip-range[]`, `netmask`, `default-gateway`, `interface`, `vci-*`) | the network the gate hands addresses out on | the subnet definition |
 | Reserved address | `cmdb/system/dhcp/server/<id>/reserved-address[]` (`ip`, `mac`, `description`, `action`) | the gate will always give this MAC this IP | **assignable**: an operator decision the registry may own and push |
 | Lease | `monitor/system/dhcp` (`ip`, `mac`, `hostname`, `expire_time`, `status`, `reserved`) | who holds the address right now | **observed presence**, never ownership; a registry entry may supersede it |
-| Interface IP | `cmdb/system/interface` (`ip`, `secondary-IP[]`) | the gate's own address on the network | **device-owned**: report, never edit or release |
+| Interface IP | `cmdb/system/interface` (`ip`, `secondaryip[]`) | the gate's own address on the network | **device-owned**: report, never edit or release |
 | VIP | `cmdb/firewall/vip` (`extip`, `mappedip`) | a NAT'd address the gate answers for | **device-owned** |
 | ARP entry | `monitor/network/arp` | L3 neighbor binding | evidence of presence, MAC-matched only |
 

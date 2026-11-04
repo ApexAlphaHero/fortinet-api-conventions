@@ -58,6 +58,12 @@ only; the app's own names are left out.
     `ccsrf_token_<port>_<hash>` cookies, and `/logincheck` answers the login page on 7.6. A
     FortiGate flashes through `monitor/system/firmware/upgrade` (`source=upload`, multipart
     `file`); its `.out` is a gzip whose embedded name is the platform/version token.
+13. **A managed FortiSwitch has no MAC in its own records, and is also a "client"** (see the REST
+    reference, detected devices). `managed-switch/status` has no MAC; the detected-device
+    `is_fortilink_peer` row is the far end of the FortiLink, never the switch. The gate's
+    `user/device/query` lists the switch's own traffic with `hardware_family` "FortiSwitch"
+    (request the field) — filter it out or every switch is found twice. The switch's MAC is
+    what its own gate's lease / ARP shows at `connecting_from`.
 
 ## Which file
 

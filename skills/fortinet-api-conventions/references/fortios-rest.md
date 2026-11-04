@@ -246,6 +246,27 @@ has the MAC bound to a different address, or to several, treat the detected addr
 only. A detected address merely absent from ARP is not a contradiction — an idle neighbour
 entry ages out within minutes.
 
+### Managed FortiSwitches appear in the inventory too, and nowhere else with a MAC
+
+The inventory lists a managed FortiSwitch's OWN management traffic as a client: its
+`connecting_from` address, its MAC, its switch-id as `hostname`, `os_name` "FortiSwitch OS",
+`hardware_vendor` "Fortinet" and **`hardware_family` "FortiSwitch"**. `hardware_family` is only
+returned when `format=` asks for it. A reader that builds devices from both this table and
+`managed-switch/status` gets every switch twice, at the same address. Filter the inventory on
+`hardware_family` = "FortiSwitch" (compare trimmed and case-insensitive); an endpoint merely
+plugged into a switch port is not affected, because the family describes the device itself.
+
+FortiOS reports no MAC for a managed switch anywhere it describes the switch:
+`managed-switch/status` carries serial, switch-id, `connecting_from` and state, but no MAC.
+`switch-controller/detected-device` is NOT a source for one either: it lists the MACs each
+switch has LEARNED on its ports, so the row flagged `is_fortilink_peer` under a switch's
+`switch_id` is the device at the far end of that switch's FortiLink (the FortiGate, or the
+switch upstream in a chain), never the switch. Taking it as the switch's MAC hands a switch
+its neighbour's identity. The switch's management MAC is what its own FortiGate sees at
+`connecting_from`: that gate's DHCP lease, ARP entry or online inventory row for the
+address (the switch takes it from the gate by DHCP). Read only the controlling gate's tables
+and refuse an answer when they name two MACs for the address.
+
 ## IPv6: where FortiOS keeps it, and where it does not
 
 Read off FortiOS 7.6.7 and 8.0.1; FortiManager's device-DB copy of the same CMDB answers the

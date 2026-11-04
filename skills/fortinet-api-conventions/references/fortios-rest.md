@@ -197,6 +197,21 @@ CMDB `system/interface` `status` ("up" / "down").
 - On an up link, `0` can only mean half duplex. That reading follows from the encoding and
   has not been seen on a real half-duplex port.
 
+### Secondary interface addresses: the table is `secondary-IP`, the flag is `secondaryip`
+
+`GET /api/v2/cmdb/system/interface` returns an interface's secondary addresses as the child
+table **`secondary-IP`** (capital `IP`): `[{ id, ip: "x.x.x.x y.y.y.y", allowaccess, ... }]`,
+`[]` when there are none. **`secondaryip`** on the same row is the enable FLAG
+(`"enable"` / `"disable"`), not the table. There is no `secondary-ip` key at all. Confirmed on
+FortiOS 7.6.7, 7.6.8 and 8.0.1.
+
+- A reader keyed on `secondary-ip` (the spelling the CLI's `config secondaryip` and most
+  examples suggest) gets `undefined` on every interface and silently reports "no secondaries".
+- FortiManager's device DB follows the CLI instead: the table is `secondaryip`, the flag
+  `secondary-IP` as an integer. Not verified against a live FMG. A reader serving both
+  transports should take whichever of the spellings holds an array, so the flag can never be
+  mistaken for the table.
+
 ## Detected devices: the field names moved, and a missing field is silent
 
 `GET /api/v2/monitor/user/device/query` (the device inventory / detected devices) renamed

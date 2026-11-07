@@ -39,6 +39,20 @@ facts the controller does not republish. It also has vendor-specific traps.
 - **ENTITY-MIB** (`entPhysicalTable`) gives transceivers/PSUs/fans with serial + model for RMAs.
   Do not correlate `entPhysical*` to interfaces by index; it is right often enough to look
   correct and silently wrong the rest of the time.
+- **SFP DDM readings have no RFC 4133 link to their port** (FortiSwitchOS 7.x, verified on
+  FSW-148F and FSR-112F-POE v7.6.5). Every ENTITY-SENSOR row's `entPhysicalContainedIn` is the
+  chassis (1); `entAliasMappingTable` holds one row (the CPU port); `entPhysicalParentRelPos` is
+  a running counter; `entPhysicalName` / `Descr` are positional labels that can be wrong about
+  the reading's TYPE (the 112F names its two power-input truthvalue sensors `SFP1`/`SFP2`), and
+  the 148F stops publishing `entPhysicalTable` rows after index 8 while sensors continue to 24.
+  What IS reliable (matched value-for-value against `get switch modules status`): each SFP cage
+  is five consecutive `entPhySensorTable` rows — celsius, volts, dBm, dBm, mAmps — with **Tx
+  before Rx**; an empty cage still emits its five rows as `unavailable(2)`, so the k-th group is
+  the k-th cage; the cages are the highest-numbered `portN` interfaces. A copper (RJ45) SFP has
+  no DDM and reads `unavailable` like an empty cage while the port has link — never treat
+  "unavailable cage on a link-up port" as a contradiction. Use `entPhySensorUnitsDisplay` to
+  tell the rows apart, not the names. Module type (SX/LX/T, wavelength, part number) is not in
+  SNMP at all; per-module `alarm_flags` / `warning_flags` are CLI-only.
 - SNMP is often DISABLED on managed switches/APs by default; expect `allowaccess` without
   `snmp` and fall back to the controller's REST tables.
 
